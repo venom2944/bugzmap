@@ -87,118 +87,121 @@
 
   <div id="infoBox"></div> <!-- 좌표 및 반경 표시 -->
 
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e31443337f00b1a3784da4be4a51b65b"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e31443337f00b1a3784da4be4a51b65b&autoload=false"></script>
+
   <script>
-    // 초기값 (앱에서 전달받을 수 있음)
-    const initialLat = 37.5665;
-    const initialLng = 126.9780;
-    const initialRadius = 500;
+    kakao.maps.load(function () {
 
-    const url = new URL(window.location.href);
-    const lat = parseFloat(url.searchParams.get("lat")) || initialLat;
-    const lng = parseFloat(url.searchParams.get("lng")) || initialLng;
-    const radius = parseFloat(url.searchParams.get("radius")) || initialRadius;
+      // 초기값 (앱에서 전달받을 수 있음)
+      const initialLat = 37.5665;
+      const initialLng = 126.9780;
+      const initialRadius = 500;
 
-    const map = new kakao.maps.Map(document.getElementById('map'), {
-      center: new kakao.maps.LatLng(lat, lng),
-      level: 5,
-      draggable: true,
-      scrollwheel: true
-    });
+      const url = new URL(window.location.href);
+      const lat = parseFloat(url.searchParams.get("lat")) || initialLat;
+      const lng = parseFloat(url.searchParams.get("lng")) || initialLng;
+      const radius = parseFloat(url.searchParams.get("radius")) || initialRadius;
 
-    const marker = new kakao.maps.Marker({ position: map.getCenter(), map: map });
+      const map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(lat, lng),
+        level: 5,
+        draggable: true,
+        scrollwheel: true
+      });
 
-    let circle = new kakao.maps.Circle({
-      center: map.getCenter(),
-      radius: radius,
-      strokeWeight: 2,
-      strokeColor: '#FF0000',
-      strokeOpacity: 0.7,
-      strokeStyle: 'dashed',
-      fillColor: '#FF0000',
-      fillOpacity: 0.2,
-      map: map
-    });
+      const marker = new kakao.maps.Marker({ position: map.getCenter(), map: map });
 
-    const infoBox = document.getElementById('infoBox');
+      let circle = new kakao.maps.Circle({
+        center: map.getCenter(),
+        radius: radius,
+        strokeWeight: 2,
+        strokeColor: '#FF0000',
+        strokeOpacity: 0.7,
+        strokeStyle: 'dashed',
+        fillColor: '#FF0000',
+        fillOpacity: 0.2,
+        map: map
+      });
 
-    // 초기 표시
-    infoBox.innerHTML = `좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>반경: ${radius}m`;
+      const infoBox = document.getElementById('infoBox');
+      // 초기 표시
+      infoBox.innerHTML = `좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>반경: ${radius}m`;
 
-    // 중앙 변경 이벤트
-    function updateCenter() {
-      const center = map.getCenter();
-      marker.setPosition(center);
-      circle.setOptions({ center });
-
-      // 좌표값만 업데이트
-      infoBox.innerHTML = `좌표: ${center.getLat().toFixed(6)}, ${center.getLng().toFixed(6)}<br>반경: ${radius}m`;
-    }
-
-    kakao.maps.event.addListener(map, 'center_changed', updateCenter);
-    kakao.maps.event.addListener(map, 'dragend', updateCenter);
-
-    document.addEventListener("message", function(event) {
-
-      let data;
-      try {
-        data = JSON.parse(event.data);
-      } catch (e) {
-        console.error("Invalid message data", e);
-        return;
-      }
-
-      if (data.type === 'REQUEST_LOCATION') {
+      // 중앙 변경 이벤트
+      function updateCenter() {
         const center = map.getCenter();
-        const payload = {
-          lat: center.getLat(),
-          lng: center.getLng()
-        };
-        window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+        marker.setPosition(center);
+        circle.setOptions({ center });
+
+        // 좌표값만 업데이트
+        infoBox.innerHTML = `좌표: ${center.getLat().toFixed(6)}, ${center.getLng().toFixed(6)}<br>반경: ${radius}m`;
       }
 
-      if (data.type === 'CURRENT_LOCATION') {
-        const { latitude, longitude } = data;
+      kakao.maps.event.addListener(map, 'center_changed', updateCenter);
+      kakao.maps.event.addListener(map, 'dragend', updateCenter);
 
-        const newCenter = new kakao.maps.LatLng(latitude, longitude);
-        map.setCenter(newCenter);
-        marker.setPosition(newCenter);
-        circle.setOptions({ center: newCenter });
-        infoBox.innerHTML = `좌표: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>반경: ${radius}m`;
-      }
-    });
+      document.addEventListener("message", function(event) {
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (e) {
+          console.error("Invalid message data", e);
+          return;
+        }
 
-    const currentLocationBtn = document.getElementById('currentLocationBtn');
-    const loadingOverlay = document.getElementById('loadingOverlay');
+        if (data.type === 'REQUEST_LOCATION') {
+          const center = map.getCenter();
+          const payload = {
+            lat: center.getLat(),
+            lng: center.getLng()
+          };
+          window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+        }
 
-    currentLocationBtn.addEventListener('click', async () => {
-      loadingOverlay.style.display = 'flex';
+        if (data.type === 'CURRENT_LOCATION') {
+          const { latitude, longitude } = data;
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
+          const newCenter = new kakao.maps.LatLng(latitude, longitude);
+          map.setCenter(newCenter);
+          marker.setPosition(newCenter);
+          circle.setOptions({ center: newCenter });
+          infoBox.innerHTML = `좌표: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>반경: ${radius}m`;
+        }
+      });
 
-            const newCenter = new kakao.maps.LatLng(latitude, longitude);
-            map.setCenter(newCenter);
-            marker.setPosition(newCenter);
-            circle.setOptions({ center: newCenter });
+      const currentLocationBtn = document.getElementById('currentLocationBtn');
+      const loadingOverlay = document.getElementById('loadingOverlay');
 
-            infoBox.innerHTML =
-              `좌표: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>반경: ${radius}m`;
+      currentLocationBtn.addEventListener('click', async () => {
+        loadingOverlay.style.display = 'flex';
 
-            loadingOverlay.style.display = 'none';
-          },
-          () => {
-            alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인하세요.');
-            loadingOverlay.style.display = 'none';
-          },
-          { enableHighAccuracy: true }
-        );
-      } else {
-        alert('브라우저에서 위치 정보를 지원하지 않습니다.');
-        loadingOverlay.style.display = 'none';
-      }
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+
+              const newCenter = new kakao.maps.LatLng(latitude, longitude);
+              map.setCenter(newCenter);
+              marker.setPosition(newCenter);
+              circle.setOptions({ center: newCenter });
+
+              infoBox.innerHTML =
+                `좌표: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>반경: ${radius}m`;
+
+              loadingOverlay.style.display = 'none';
+            },
+            () => {
+              alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인하세요.');
+              loadingOverlay.style.display = 'none';
+            },
+            { enableHighAccuracy: true }
+          );
+        } else {
+          alert('브라우저에서 위치 정보를 지원하지 않습니다.');
+          loadingOverlay.style.display = 'none';
+        }
+      });
+      
     });
 
   </script>
